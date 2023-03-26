@@ -5,6 +5,9 @@ on:
     types: [created]
 
 
+permissions:
+  contents: write
+
 jobs:
   output-release:
     runs-on: ubuntu-latest
@@ -54,7 +57,7 @@ jobs:
     
     - name: Upload tarball to release
       run: |
-        UPLOAD_URL=$(curl -sH "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "${GITHUB_REPOSITORY}/releases/tags/${{ github.event.release.name }}" \
+        UPLOAD_URL=$(curl -sH "Authorization: ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${{ github.event.release.name }}" \
           | jq -r '.upload_url' | cut -d'{' -f1)
         FILE=solana-${{ github.event.release.name }}-ubuntu-2204.tgz
         curl -X POST \
@@ -97,7 +100,7 @@ jobs:
     
     - name: Upload tarball to release
       run: |
-        UPLOAD_URL=$(curl -sH "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "${GITHUB_REPOSITORY}/releases/tags/${{ github.event.release.name }}" \
+        UPLOAD_URL=$(curl -sH "Authorization: ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${{ github.event.release.name }}" \
           | jq -r '.upload_url' | cut -d'{' -f1)
         FILE=solana-${{ github.event.release.name }}-ubuntu-2004.tgz
         curl -X POST \
