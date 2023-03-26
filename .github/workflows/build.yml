@@ -35,7 +35,7 @@ jobs:
         source ${HOME}/.cargo/env
         rustup component add rustfmt
         rustup update
-        sudo apt-get -y install libssl-dev libudev-dev pkg-config zlib1g-dev llvm clang cmake make libprotobuf-dev protobuf-compiler
+        sudo apt-get -y install jq libssl-dev libudev-dev pkg-config zlib1g-dev llvm clang cmake make libprotobuf-dev protobuf-compiler
         echo "${HOME}/.cargo/bin" >> $GITHUB_PATH
 
     - uses: actions/checkout@v3
@@ -51,13 +51,19 @@ jobs:
     - name: Create tarball
       run: |
          tar cvzf solana-${{ github.event.release.name }}-ubuntu-2204.tgz --directory=${HOME}/.local/share/solana/install/releases/${{ github.event.release.name }}/bin ./
-
-    - uses: echapmanFromBunnings/upload-release-assets@1.3
-      with:
-        releaseTag: ${{ github.event.release.name }}
-        githubToken: ${{ secrets.GITHUB_TOKEN }}
-        files: |
-          solana-${{ github.event.release.name }}-ubuntu-2204.tgz
+    
+    - name: Upload tarball to release
+      run: |
+        UPLOAD_URL=$(curl -sH "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "${GITHUB_REPOSITORY}/releases/tags/${{ github.event.release.name }}" \
+          | jq -r '.upload_url' | cut -d'{' -f1)
+        FILE=solana-${{ github.event.release.name }}-ubuntu-2204.tgz
+        curl -X POST \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          -H "Content-Type: $(file -b --mime-type ${FILE})" \
+          -H "Content-Length: $(wc -c <${FILE} | xargs)" \
+          -T "${FILE}" \
+          "${UPLOAD_URL}?name=$(basename ${FILE})" | cat
 
   build-ubuntu-2004:
     runs-on: ubuntu-20.04-16-cores
@@ -72,7 +78,7 @@ jobs:
         source ${HOME}/.cargo/env
         rustup component add rustfmt
         rustup update
-        sudo apt-get -y install libssl-dev libudev-dev pkg-config zlib1g-dev llvm clang cmake make libprotobuf-dev protobuf-compiler
+        sudo apt-get -y install jq libssl-dev libudev-dev pkg-config zlib1g-dev llvm clang cmake make libprotobuf-dev protobuf-compiler
         echo "${HOME}/.cargo/bin" >> $GITHUB_PATH
     
     - uses: actions/checkout@v3
@@ -87,11 +93,17 @@ jobs:
 
     - name: Create tarball
       run: |
-         tar cvzf solana-${{ github.event.release.name }}-ubuntu-2204.tgz --directory=${HOME}/.local/share/solana/install/releases/${{ github.event.release.name }}/bin ./
-
-    - uses: echapmanFromBunnings/upload-release-assets@1.3
-      with:
-        releaseTag: ${{ github.event.release.name }}
-        githubToken: ${{ secrets.GITHUB_TOKEN }}
-        files: |
-          solana-${{ github.event.release.name }}-ubuntu-2004.tgz
+         tar cvzf solana-${{ github.event.release.name }}-ubuntu-2004.tgz --directory=${HOME}/.local/share/solana/install/releases/${{ github.event.release.name }}/bin ./
+    
+    - name: Upload tarball to release
+      run: |
+        UPLOAD_URL=$(curl -sH "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "${GITHUB_REPOSITORY}/releases/tags/${{ github.event.release.name }}" \
+          | jq -r '.upload_url' | cut -d'{' -f1)
+        FILE=solana-${{ github.event.release.name }}-ubuntu-2004.tgz
+        curl -X POST \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          -H "Content-Type: $(file -b --mime-type ${FILE})" \
+          -H "Content-Length: $(wc -c <${FILE} | xargs)" \
+          -T "${FILE}" \
+          "${UPLOAD_URL}?name=$(basename ${FILE})" | cat
