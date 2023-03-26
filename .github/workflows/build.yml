@@ -1,0 +1,97 @@
+name: Build and upload assets
+
+on:
+  release:
+    types: [created]
+
+
+jobs:
+  output-release:
+    runs-on: ubuntu-latest
+    name: Ouput release attributes
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set release ID as output
+        id: release
+        run: | 
+          echo "release_url=${{ github.event.release.url }}" >> $GITHUB_OUTPUT
+          echo "release_name=${{ github.event.release.name }}" >> $GITHUB_OUTPUT
+          echo "release_id=${{ github.event.release.id }}" >> $GITHUB_OUTPUT
+          echo "release_upload_url=${{ github.event.release.upload_url }}" >> $GITHUB_OUTPUT
+          echo "release_assets_url=${{ github.event.release.assets_url }}" >> $GITHUB_OUTPUT
+
+  build-ubuntu-2204:
+    runs-on: ubuntu-22.04-16-cores
+    needs: output-release
+    steps:
+
+    - name: Install deps
+      run: |
+        rm -f /home/runner/.cargo/bin/rustfmt
+        rm -f /home/runner/.cargo/bin/cargo-fmt
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        source ${HOME}/.cargo/env
+        rustup component add rustfmt
+        rustup update
+        sudo apt-get -y install libssl-dev libudev-dev pkg-config zlib1g-dev llvm clang cmake make libprotobuf-dev protobuf-compiler
+        echo "${HOME}/.cargo/bin" >> $GITHUB_PATH
+
+    - uses: actions/checkout@v3
+      with:
+        repository: 'jito-foundation/jito-solana'
+        ref: ${{ github.event.release.name }}
+        submodules: 'recursive'
+
+    - name: Build
+      run: |
+        CI_COMMIT=$(git rev-parse HEAD) scripts/cargo-install-all.sh ${HOME}/.local/share/solana/install/releases/${{ github.event.release.name }}
+
+    - name: Create tarball
+      run: |
+         tar cvzf solana-${{ github.event.release.name }}-ubuntu-2204.tgz --directory=${HOME}/.local/share/solana/install/releases/${{ github.event.release.name }}/bin ./
+
+    - uses: echapmanFromBunnings/upload-release-assets@1.3
+      with:
+        releaseTag: ${{ github.event.release.name }}
+        githubToken: ${{ secrets.GITHUB_TOKEN }}
+        files: |
+          solana-${{ github.event.release.name }}-ubuntu-2204.tgz
+
+  build-ubuntu-2004:
+    runs-on: ubuntu-20.04-16-cores
+    needs: output-release
+    steps:
+
+    - name: Install deps
+      run: |
+        rm -f /home/runner/.cargo/bin/rustfmt
+        rm -f /home/runner/.cargo/bin/cargo-fmt
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        source ${HOME}/.cargo/env
+        rustup component add rustfmt
+        rustup update
+        sudo apt-get -y install libssl-dev libudev-dev pkg-config zlib1g-dev llvm clang cmake make libprotobuf-dev protobuf-compiler
+        echo "${HOME}/.cargo/bin" >> $GITHUB_PATH
+    
+    - uses: actions/checkout@v3
+      with:
+        repository: 'jito-foundation/jito-solana'
+        ref: ${{ github.event.release.name }}
+        submodules: 'recursive'
+
+    - name: Build
+      run: |
+        CI_COMMIT=$(git rev-parse HEAD) scripts/cargo-install-all.sh ${HOME}/.local/share/solana/install/releases/${{ github.event.release.name }}
+
+    - name: Create tarball
+      run: |
+         tar cvzf solana-${{ github.event.release.name }}-ubuntu-2204.tgz --directory=${HOME}/.local/share/solana/install/releases/${{ github.event.release.name }}/bin ./
+
+    - uses: echapmanFromBunnings/upload-release-assets@1.3
+      with:
+        releaseTag: ${{ github.event.release.name }}
+        githubToken: ${{ secrets.GITHUB_TOKEN }}
+        files: |
+          solana-${{ github.event.release.name }}-ubuntu-2004.tgz
