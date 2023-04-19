@@ -49,7 +49,7 @@ jobs:
 
     - name: Build
       run: |
-        CI_COMMIT=$(git rev-parse HEAD) scripts/cargo-install-all.sh ${HOME}/.local/share/solana/install/releases/${{ github.event.release.name }}
+        CI_COMMIT=$(git rev-parse HEAD) scripts/cargo-install-all.sh --validator-only ${HOME}/.local/share/solana/install/releases/${{ github.event.release.name }}
 
     - name: Create tarball
       run: |
@@ -92,7 +92,7 @@ jobs:
 
     - name: Build
       run: |
-        CI_COMMIT=$(git rev-parse HEAD) scripts/cargo-install-all.sh ${HOME}/.local/share/solana/install/releases/${{ github.event.release.name }}
+        CI_COMMIT=$(git rev-parse HEAD) scripts/cargo-install-all.sh --validator-only ${HOME}/.local/share/solana/install/releases/${{ github.event.release.name }}
 
     - name: Create tarball
       run: |
