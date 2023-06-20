@@ -38,6 +38,7 @@ jobs:
         source ${HOME}/.cargo/env
         rustup component add rustfmt
         rustup update
+        sudo apt-get update
         sudo apt-get -y install jq libssl-dev libudev-dev pkg-config zlib1g-dev llvm clang cmake make libprotobuf-dev protobuf-compiler
         echo "${HOME}/.cargo/bin" >> $GITHUB_PATH
 
@@ -81,6 +82,7 @@ jobs:
         source ${HOME}/.cargo/env
         rustup component add rustfmt
         rustup update
+        sudo apt-get update
         sudo apt-get -y install jq libssl-dev libudev-dev pkg-config zlib1g-dev llvm clang cmake make libprotobuf-dev protobuf-compiler
         echo "${HOME}/.cargo/bin" >> $GITHUB_PATH
     
