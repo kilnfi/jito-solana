@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
   output-release:
@@ -18,7 +19,7 @@ jobs:
 
       - name: Set release ID as output
         id: release
-        run: | 
+        run: |
           echo "release_url=${{ github.event.release.url }}" >> $GITHUB_OUTPUT
           echo "release_name=${{ github.event.release.name }}" >> $GITHUB_OUTPUT
           echo "release_id=${{ github.event.release.id }}" >> $GITHUB_OUTPUT
@@ -55,7 +56,7 @@ jobs:
     - name: Create tarball
       run: |
          tar cvzf solana-${{ github.event.release.name }}-ubuntu-2204.tgz --directory=${HOME}/.local/share/solana/install/releases/${{ github.event.release.name }}/bin ./
-    
+
     - name: Upload tarball to release
       run: |
         UPLOAD_URL=$(curl -sH "Authorization: ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${{ github.event.release.name }}" \
@@ -85,7 +86,7 @@ jobs:
         sudo apt-get update
         sudo apt-get -y install jq libssl-dev libudev-dev pkg-config zlib1g-dev llvm clang cmake make libprotobuf-dev protobuf-compiler
         echo "${HOME}/.cargo/bin" >> $GITHUB_PATH
-    
+
     - uses: actions/checkout@v3
       with:
         repository: 'jito-foundation/jito-solana'
@@ -99,7 +100,7 @@ jobs:
     - name: Create tarball
       run: |
          tar cvzf solana-${{ github.event.release.name }}-ubuntu-2004.tgz --directory=${HOME}/.local/share/solana/install/releases/${{ github.event.release.name }}/bin ./
-    
+
     - name: Upload tarball to release
       run: |
         UPLOAD_URL=$(curl -sH "Authorization: ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${{ github.event.release.name }}" \
@@ -112,3 +113,30 @@ jobs:
           -H "Content-Length: $(wc -c <${FILE} | xargs)" \
           -T "${FILE}" \
           "${UPLOAD_URL}?name=$(basename ${FILE})" | cat
+
+  build-docker:
+    runs-on: ubuntu-22.04
+    needs: output-release
+    steps:
+
+    - uses: actions/checkout@v3
+      with:
+        repository: 'jito-foundation/jito-solana'
+        ref: ${{ github.event.release.name }}
+        submodules: 'recursive'
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build
+      run: |
+        set -x
+        CI="" ./sdk/docker-solana/build.sh
+        docker tag solanalabs/solana:"${CI_TAG}" ghcr.io/kilnfi/jito-solana:"${CI_TAG}"
+        docker push ghcr.io/kilnfi/jito-solana:"${CI_TAG}"
+      env:
+        CI_TAG: ${{ github.event.release.name }}
