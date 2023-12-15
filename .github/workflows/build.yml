@@ -47,6 +47,7 @@ jobs:
     - name: Build
       run: |
         set -x
+        sed -i -E 's/channel = "[^"]*"/channel = "1.74.0"/g' rust-toolchain.toml
         CI="" ./sdk/docker-solana/build.sh
         docker tag solanalabs/solana:"${CI_TAG}" ghcr.io/kilnfi/jito-solana:"${CI_TAG}"
         docker push ghcr.io/kilnfi/jito-solana:"${CI_TAG}"
