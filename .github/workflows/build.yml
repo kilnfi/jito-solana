@@ -12,7 +12,7 @@ permissions:
 jobs:
   output-release:
     runs-on: ubuntu-latest
-    name: Ouput release attributes
+    name: Output release attributes
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -31,24 +31,43 @@ jobs:
     needs: output-release
     steps:
 
-    - uses: actions/checkout@v3
-      with:
-        repository: 'jito-foundation/jito-solana'
-        ref: ${{ github.event.release.name }}
-        submodules: 'recursive'
+      - uses: actions/checkout@v3
+        with:
+          repository: 'jito-foundation/jito-solana'
+          ref: ${{ github.event.release.name }}
+          submodules: 'recursive'
 
-    - name: Login to GitHub Container Registry
-      uses: docker/login-action@v2
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Apply Jito-Solana Patches
+        run: |
+          wget https://gist.githubusercontent.com/willhickey/3914d29bad897ff4972fee97dd80e5c9/raw/9de404edf7cc3956934875fe2c9ad50125984a0d/0001-Apply-rbpf-patch.patch
+          wget https://gist.githubusercontent.com/buffalu/05c7f54c4a7c268ecdf37f0d3835a266/raw/9e9609d73ab1de21e214f55a81cba5d56bf90126/0001-Update-dependency.patch
+          wget https://gist.githubusercontent.com/buffalu/05c7f54c4a7c268ecdf37f0d3835a266/raw/39fb45a2e3fefb4898e398fe8e5f213938ae1384/patch_shas
+          
+          shasum -c patch_shas
+          sha256sum -c patch_shas
+          
+          git fetch --all
+          git checkout -b v1.18_patched v1.18.21-jito
+          git submodule update -i -r
 
-    - name: Build
-      run: |
-        set -x
-        CI="" ./sdk/docker-solana/build.sh
-        docker tag solanalabs/solana:"${CI_TAG}" ghcr.io/kilnfi/jito-solana:"${CI_TAG}"
-        docker push ghcr.io/kilnfi/jito-solana:"${CI_TAG}"
-      env:
-        CI_TAG: ${{ github.event.release.name }}
+          git clone https://github.com/solana-labs/rbpf.git --depth 1 --branch v0.8.0
+          cd rbpf
+          git am ../0001-Apply-rbpf-patch.patch
+          cd ..
+          git am 0001-Update-dependency.patch
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        run: |
+          set -x
+          CI="" ./sdk/docker-solana/build.sh
+          docker tag solanalabs/solana:"${CI_TAG}" ghcr.io/kilnfi/jito-solana:"${CI_TAG}"
+          docker push ghcr.io/kilnfi/jito-solana:"${CI_TAG}"
+        env:
+          CI_TAG: ${{ github.event.release.name }}
