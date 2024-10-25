@@ -48,7 +48,7 @@ jobs:
       run: |
         set -x
         CI="" ./sdk/docker-solana/build.sh
-        docker tag solanalabs/solana:"${CI_TAG}" ghcr.io/kilnfi/jito-solana:"${CI_TAG}"
+        docker tag anzaxyz/agave:"${CI_TAG}" ghcr.io/kilnfi/jito-solana:"${CI_TAG}"
         docker push ghcr.io/kilnfi/jito-solana:"${CI_TAG}"
       env:
         CI_TAG: ${{ github.event.release.name }}
